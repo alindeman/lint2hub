@@ -108,6 +108,8 @@ func (c *Commenter) hydrateExistingComments(ctx context.Context) error {
 	opts := &github.PullRequestListCommentsOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
 	}
+
+	c.existingComments = make([]*github.PullRequestComment, 0)
 	for {
 		existingComments, resp, err := c.gh.PullRequests.ListComments(ctx, c.owner, c.repo, c.pullRequest, opts)
 		if err != nil {
