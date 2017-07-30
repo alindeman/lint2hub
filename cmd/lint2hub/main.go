@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -16,6 +17,27 @@ import (
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
 )
+
+type urlFlag struct {
+	URL *url.URL
+}
+
+func (f *urlFlag) Set(s string) error {
+	url, err := url.Parse(s)
+	if err != nil {
+		return err
+	}
+
+	*f.URL = *url
+	return nil
+}
+
+func (f *urlFlag) String() string {
+	if f.URL == nil {
+		return ""
+	}
+	return f.URL.String()
+}
 
 func main() {
 	if err := run(); err != nil {
@@ -27,6 +49,7 @@ func main() {
 func run() error {
 	var (
 		githubAccessToken string
+		githubBaseURL     *url.URL
 		owner             string
 		repo              string
 		pullRequest       int
@@ -39,6 +62,7 @@ func run() error {
 	)
 
 	flag.StringVar(&githubAccessToken, "github-access-token", "", "Access token for GitHub API")
+	flag.Var(&urlFlag{URL: githubBaseURL}, "github-base-url", "Base URL for the GitHub API (defaults to the public GitHub API)")
 	flag.StringVar(&owner, "owner", "", "Owner of the GitHub repository (i.e., the username or organization name)")
 	flag.StringVar(&repo, "repo", "", "Name of the GitHub repository")
 	flag.IntVar(&pullRequest, "pull-request", 0, "Pull request number")
@@ -101,6 +125,9 @@ func run() error {
 	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: githubAccessToken})
 	tc := oauth2.NewClient(ctx, ts)
 	gh := github.NewClient(tc)
+	if githubBaseURL != nil {
+		gh.BaseURL = githubBaseURL
+	}
 	commenter := lint2hub.NewCommenter(gh, owner, repo, pullRequest, sha)
 
 	if batch {
