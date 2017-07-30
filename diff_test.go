@@ -53,7 +53,7 @@ index 639f958..81590fa 100644
 		t.Run(fmt.Sprintf("index %d", i), func(t *testing.T) {
 			t.Parallel()
 
-			files := SplitDiffByFile(tc.diff)
+			files := splitDiffByFile(tc.diff)
 			if !reflect.DeepEqual(tc.expected, files) {
 				t.Errorf("expected %v, got %v", tc.expected, files)
 			}
@@ -97,7 +97,7 @@ Hello
 		t.Run(fmt.Sprintf("index %d", i), func(t *testing.T) {
 			t.Parallel()
 
-			positions := BuildPositionMap(tc.diff)
+			positions := buildPositionMap(tc.diff)
 			if !reflect.DeepEqual(tc.expected, positions) {
 				t.Errorf("expected %v, got %v", tc.expected, positions)
 			}

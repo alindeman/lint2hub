@@ -35,8 +35,8 @@ func (s *noallocLineScanner) NextLine() (line string, eof bool) {
 	return s.str[prevPos : prevPos+le], false
 }
 
-// SplitDiffByFile splits a large diff into smaller diffs per file
-func SplitDiffByFile(diff string) map[string]string {
+// splitDiffByFile splits a large diff into smaller diffs per file
+func splitDiffByFile(diff string) map[string]string {
 	files := map[string]string{}
 	file := ""
 	firstHunk := -1
@@ -69,12 +69,12 @@ func SplitDiffByFile(diff string) map[string]string {
 	return files
 }
 
-// BuildPositionMap builds a map of filename to a map of line numbers in the new
+// buildPositionMap builds a map of filename to a map of line numbers in the new
 // file to GitHub diff "positions". Positions are used to post comments on lines
 // in the GitHub API.
 //
-// diff is a single file's diff, possibly extracted by SplitDiffByFile.
-func BuildPositionMap(fileDiff string) map[int]int {
+// diff is a single file's diff, possibly extracted by splitDiffByFile.
+func buildPositionMap(fileDiff string) map[int]int {
 	positions := map[int]int{}
 	lineNum := 0
 	position := 0

@@ -98,8 +98,8 @@ func (c *Commenter) hydrateFilePositions(ctx context.Context) error {
 	}
 
 	c.filePositions = make(map[string]map[int]int)
-	for file, fileDiff := range SplitDiffByFile(diff) {
-		c.filePositions[file] = BuildPositionMap(fileDiff)
+	for file, fileDiff := range splitDiffByFile(diff) {
+		c.filePositions[file] = buildPositionMap(fileDiff)
 	}
 	return nil
 }
