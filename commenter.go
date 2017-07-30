@@ -78,6 +78,8 @@ func (c *Commenter) EnsureComment(ctx context.Context, comment *Comment) (*githu
 	}
 
 	ghComment, _, err := c.gh.PullRequests.CreateComment(ctx, c.owner, c.repo, c.pullRequest, ghComment)
+	c.existingComments = append(c.existingComments, ghComment)
+
 	return ghComment, err
 }
 
