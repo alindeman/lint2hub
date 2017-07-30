@@ -40,7 +40,7 @@ func NewCommenter(gh *github.Client, owner string, repo string, pullRequest int,
 	}
 }
 
-func (c *Commenter) EnsureCommentPosted(ctx context.Context, comment *Comment) (*github.PullRequestComment, error) {
+func (c *Commenter) EnsureComment(ctx context.Context, comment *Comment) (*github.PullRequestComment, error) {
 	if c.filePositions == nil {
 		if err := c.hydrateFilePositions(ctx); err != nil {
 			return nil, err

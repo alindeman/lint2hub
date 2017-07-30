@@ -123,7 +123,7 @@ func run() error {
 				Line: lineNum,
 				Body: parts[2],
 			}
-			if _, err := commenter.EnsureCommentPosted(ctx, comment); err != nil {
+			if _, err := commenter.EnsureComment(ctx, comment); err != nil {
 				if err = logMinorError(log, err); err != nil {
 					return err
 				}
@@ -140,7 +140,7 @@ func run() error {
 			Line: line,
 			Body: body,
 		}
-		_, err := commenter.EnsureCommentPosted(ctx, comment)
+		_, err := commenter.EnsureComment(ctx, comment)
 		if err = logMinorError(log, err); err != nil {
 			return err
 		}
