@@ -5,7 +5,7 @@
 ## Usage
 
 ```bash
-export LINE2HUB_GITHUB_ACCESS_TOKEN="abc123"
+export LINT2HUB_GITHUB_ACCESS_TOKEN="abc123"
 lint2hub -owner alindeman \
   -repo lint2hub \
   -pull-request 1234 \
