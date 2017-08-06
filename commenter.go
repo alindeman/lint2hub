@@ -1,3 +1,5 @@
+// Package lint2hub automates creating GitHub pull requests review comments in
+// response to code linters.
 package lint2hub
 
 import (

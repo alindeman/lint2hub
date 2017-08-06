@@ -1,8 +1,12 @@
 # lint2hub
 
+[![GoDoc](https://godoc.org/github.com/alindeman/lint2hub?status.png)](https://godoc.org/github.com/alindeman/lint2hub)
+
 **lint2hub** automates creating GitHub pull request review comments in response to code linters. While [other](https://github.com/jenkinsci/violation-comments-to-github-plugin) [solutions](https://github.com/dgraph-io/lint) [exist](https://linthub.io/), **lint2hub** is both free software and not tied to any specific linter.
 
 ## Usage
+
+**lint2hub** is both a command line tool and a [go client](https://godoc.org/github.com/alindeman/lint2hub) for commenting on pull requests diffs.
 
 ```bash
 export LINT2HUB_GITHUB_ACCESS_TOKEN="abc123"
