@@ -2,92 +2,43 @@ package lint2hub
 
 import (
 	"fmt"
-	"reflect"
 	"testing"
 )
 
-func TestSplitDiffByFile(t *testing.T) {
+func TestDiff(t *testing.T) {
 	cases := []struct {
-		diff     string
-		expected map[string]string
+		diff      string
+		positions map[string]map[int]int
 	}{
 		{
 			diff: `diff --git a/README.md b/README.md
-index 639f958..81590fa 100644
 --- a/README.md
 +++ b/README.md
-@@ -1 +1,3 @@
--# test-repo
-\ No newline at end of file
-+# test-repo
-+
-+Hello World 1234
-diff --git a/FOO.md b/BAR.md
-index 639f958..81590fa 100644
---- a/FOO.md
-+++ b/BAR.md
-@@ -1 +1,3 @@
-+# test-repo
-+
-+Hello World 1234
-`,
-			expected: map[string]string{
-				"README.md": `@@ -1 +1,3 @@
--# test-repo
-\ No newline at end of file
-+# test-repo
-+
-+Hello World 1234
-`,
-				"BAR.md": `@@ -1 +1,3 @@
-+# test-repo
-+
-+Hello World 1234
-`,
-			},
-		},
-	}
-
-	for i, tc := range cases {
-		tc := tc
-		t.Run(fmt.Sprintf("index %d", i), func(t *testing.T) {
-			t.Parallel()
-
-			files := splitDiffByFile(tc.diff)
-			if !reflect.DeepEqual(tc.expected, files) {
-				t.Errorf("expected %v, got %v", tc.expected, files)
-			}
-		})
-	}
-}
-
-func TestBuildPositionMap(t *testing.T) {
-	cases := []struct {
-		diff     string
-		expected map[int]int
-	}{
-		{
-			diff: `@@ -1,3 +1,2 @@
+@@ -1,3 +1,2 @@
 -Howdy
 +Hello
 -Cruel
-World
+ World
 @@ -50,53 +50,50 @@
-Goodbye
+ Goodbye
 -One
 -Two
 -Three
 @@ -100,100 +100,103 @@
-Hello
+ Hello
 +One
 +Two
 +Three
 `,
-			expected: map[int]int{
-				1:   2,
-				101: 12,
-				102: 13,
-				103: 14,
+			positions: map[string]map[int]int{
+				"README.md": {
+					1:   2,
+					2:   0, // not an addition line
+					3:   0, // not present
+					101: 12,
+					102: 13,
+					103: 14,
+				},
 			},
 		},
 	}
@@ -97,9 +48,20 @@ Hello
 		t.Run(fmt.Sprintf("index %d", i), func(t *testing.T) {
 			t.Parallel()
 
-			positions := buildPositionMap(tc.diff)
-			if !reflect.DeepEqual(tc.expected, positions) {
-				t.Errorf("expected %v, got %v", tc.expected, positions)
+			diff := newDiff(tc.diff)
+			for file, positions := range tc.positions {
+				for lineNum, position := range positions {
+					actual, ok := diff.GetPosition(file, lineNum)
+					if position == 0 && ok {
+						t.Fatalf("lineNum %v: expected ok = false, but got %v", lineNum, ok)
+					} else if position != 0 && !ok {
+						t.Fatalf("lineNum %v: expected ok = true, but got %v", lineNum, ok)
+					}
+
+					if position != actual {
+						t.Fatalf("lineNum %v: expected %v, got %v", lineNum, position, actual)
+					}
+				}
 			}
 		})
 	}

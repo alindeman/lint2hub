@@ -6,7 +6,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"log"
 	"net/url"
 	"os"
 	"strconv"
@@ -56,7 +55,7 @@ func run() error {
 		sha               string
 		batch             bool
 		file              string
-		line              int
+		lineNum           int
 		body              string
 		timeout           time.Duration
 	)
@@ -69,7 +68,7 @@ func run() error {
 	flag.StringVar(&sha, "sha", "", "SHA of the commit of this checkout. If this SHA does not match the latest SHA of the pull request, no comments will be posted")
 	flag.BoolVar(&batch, "batch", false, "Batch mode")
 	flag.StringVar(&file, "file", "", "Filename")
-	flag.IntVar(&line, "line", 0, "Line number")
+	flag.IntVar(&lineNum, "line", 0, "Line number")
 	flag.StringVar(&body, "body", "", "Body of the comment")
 	flag.DurationVar(&timeout, "timeout", 30*time.Second, "Timeout")
 
@@ -99,7 +98,7 @@ func run() error {
 		if file != "" {
 			return errors.New("both -file and -batch cannot be specified at the same time")
 		}
-		if line != 0 {
+		if lineNum != 0 {
 			return errors.New("both -line and -batch cannot be specified at the same time")
 		}
 		if body != "" {
@@ -109,15 +108,13 @@ func run() error {
 		if file == "" {
 			return errors.New("required flag missing: -file")
 		}
-		if line == 0 {
+		if lineNum == 0 {
 			return errors.New("required flag missing: -line")
 		}
 		if body == "" {
 			return errors.New("required flag missing: -body")
 		}
 	}
-
-	log := log.New(os.Stderr, "", 0)
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -128,7 +125,10 @@ func run() error {
 	if githubBaseURL != nil {
 		gh.BaseURL = githubBaseURL
 	}
-	commenter := lint2hub.NewCommenter(gh, owner, repo, pullRequest, sha)
+	commenter, err := lint2hub.NewCommenter(ctx, gh, owner, repo, pullRequest, sha)
+	if err != nil {
+		return err
+	}
 
 	if batch {
 		scanner := bufio.NewScanner(os.Stdin)
@@ -144,14 +144,11 @@ func run() error {
 			if err != nil {
 				return fmt.Errorf("cannot convert line number '%v' to integer: %v", parts[1], err)
 			}
+			file := parts[0]
+			body := parts[2]
 
-			comment := &lint2hub.Comment{
-				File: parts[0],
-				Line: lineNum,
-				Body: parts[2],
-			}
-			if _, err := commenter.EnsureComment(ctx, comment); err != nil {
-				if err = logMinorError(log, err); err != nil {
+			if position, ok := commenter.GetPosition(file, lineNum); ok {
+				if err := commenter.Post(ctx, file, position, body); err != nil {
 					return err
 				}
 			}
@@ -159,34 +156,12 @@ func run() error {
 		if err := scanner.Err(); err != nil {
 			return err
 		}
-
-		return nil
 	} else {
-		comment := &lint2hub.Comment{
-			File: file,
-			Line: line,
-			Body: body,
-		}
-		_, err := commenter.EnsureComment(ctx, comment)
-		if err = logMinorError(log, err); err != nil {
-			return err
+		if position, ok := commenter.GetPosition(file, lineNum); ok {
+			if err := commenter.Post(ctx, file, position, body); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
-}
-
-// logMinorError logs an error if it's recognized as a minor issue; if it's not
-// recognized as a minor error, it's returned
-func logMinorError(log *log.Logger, err error) error {
-	if err == lint2hub.ErrShaDoesNotMatch {
-		log.Printf("%v: comments will not be posted", err)
-		return nil
-	} else if err == lint2hub.ErrFileNotFoundInDiff {
-		log.Printf("%v: comment will not be posted", err)
-		return nil
-	} else if err == lint2hub.ErrPositionNotFoundInDiff {
-		log.Printf("%v: comment will not be posted", err)
-		return nil
-	}
-	return err
 }
