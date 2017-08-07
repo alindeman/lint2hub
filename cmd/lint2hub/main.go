@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -53,7 +54,7 @@ func run() error {
 		repo              string
 		pullRequest       int
 		sha               string
-		batch             bool
+		pattern           string
 		file              string
 		lineNum           int
 		body              string
@@ -66,7 +67,7 @@ func run() error {
 	flag.StringVar(&repo, "repo", "", "Name of the GitHub repository")
 	flag.IntVar(&pullRequest, "pull-request", 0, "Pull request number")
 	flag.StringVar(&sha, "sha", "", "SHA of the commit of this checkout. If this SHA does not match the latest SHA of the pull request, no comments will be posted")
-	flag.BoolVar(&batch, "batch", false, "Batch mode")
+	flag.StringVar(&pattern, "pattern", `^(?P<file>[^:]+):(?P<line>[\d]+):(?P<column>\d*): (?P<body>.*)$`, "Regular expression matching standard input. Must contain `file`, `line`, and `body` named capture groups")
 	flag.StringVar(&file, "file", "", "Filename")
 	flag.IntVar(&lineNum, "line", 0, "Line number")
 	flag.StringVar(&body, "body", "", "Body of the comment")
@@ -94,15 +95,15 @@ func run() error {
 	if sha == "" {
 		return errors.New("required flag missing: -sha")
 	}
-	if batch {
+	if pattern != "" {
 		if file != "" {
-			return errors.New("both -file and -batch cannot be specified at the same time")
+			return errors.New("both -file and -pattern cannot be specified at the same time")
 		}
 		if lineNum != 0 {
-			return errors.New("both -line and -batch cannot be specified at the same time")
+			return errors.New("both -line and -pattern cannot be specified at the same time")
 		}
 		if body != "" {
-			return errors.New("both -body and -batch cannot be specified at the same time")
+			return errors.New("both -body and -pattern cannot be specified at the same time")
 		}
 	} else {
 		if file == "" {
@@ -130,26 +131,47 @@ func run() error {
 		return err
 	}
 
-	if batch {
+	if pattern != "" {
+		rePattern, err := regexp.Compile(pattern)
+		if err != nil {
+			return err
+		}
+
+		var fileSubmatch, lineSubmatch, bodySubmatch int
+		for i, name := range rePattern.SubexpNames() {
+			if name == "file" {
+				fileSubmatch = i
+			} else if name == "line" {
+				lineSubmatch = i
+			} else if name == "body" {
+				bodySubmatch = i
+			}
+		}
+
+		if fileSubmatch == 0 {
+			return errors.New("-pattern must contain (?P<file>) submatch")
+		} else if lineSubmatch == 0 {
+			return errors.New("-pattern must contain (?P<line>) submatch")
+		} else if bodySubmatch == 0 {
+			return errors.New("-pattern must contain (?P<body>) submatch")
+		}
+
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
-			// filename<tab>line<tab>comment\n
 			line := strings.TrimRight(scanner.Text(), "\r\n")
-			parts := strings.SplitN(line, "\t", 3)
-			if len(parts) < 3 {
-				return fmt.Errorf("malformed batch line, must have 3 parts separated by tab characters: '%v'", line)
-			}
+			if matches := rePattern.FindStringSubmatch(line); matches != nil {
+				file := matches[fileSubmatch]
+				body := matches[bodySubmatch]
 
-			lineNum, err := strconv.Atoi(parts[1])
-			if err != nil {
-				return fmt.Errorf("cannot convert line number '%v' to integer: %v", parts[1], err)
-			}
-			file := parts[0]
-			body := parts[2]
+				lineNum, err := strconv.Atoi(matches[lineSubmatch])
+				if err != nil {
+					return fmt.Errorf("cannot convert line number '%v' to integer: %v", matches[lineSubmatch], err)
+				}
 
-			if position, ok := commenter.GetPosition(file, lineNum); ok {
-				if err := commenter.Post(ctx, file, position, body); err != nil {
-					return err
+				if position, ok := commenter.GetPosition(file, lineNum); ok {
+					if err := commenter.Post(ctx, file, position, body); err != nil {
+						return err
+					}
 				}
 			}
 		}

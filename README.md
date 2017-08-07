@@ -19,52 +19,13 @@ lint2hub -owner alindeman \
   -body "exported method Foo.Bar should have comment or be unexported"
 ```
 
-Because **lint2hub** just accepts arguments at the command line, it can be hooked up to most any linter with a bit of scripting:
+**lint2hub** can also accept linter output from standard input, parsed with a custom [regular expression](https://godoc.org/regexp) to extract file, line and comment body. For instance, to pipe [gometalinter](https://github.com/alecthomas/gometalinter):
 
 ```bash
-#!/usr/bin/env bash
-set -euxo pipefail
-
-# foo.go:25:1: exported method Foo.Bar should have comment or be unexported
-while read -r line; do
-  if [[ $line =~ ^(.+):([0-9]+):([0-9]+):\ (.*)$ ]]; then
-    file="${BASH_REMATCH[1]}"
-    line="${BASH_REMATCH[2]}"
-    comment="${BASH_REMATCH[4]}"
-
-    lint2hub -owner "$OWNER" \
-      -repo "$REPO" \
-      -pull-request "$PULL_REQUEST" \
-      -sha "$SHA" \
-      -file "$file" \
-      -line "$line" \
-      -body "$comment"
-  fi
-done < <(golint .)
+gometalinter ./... |
+  lint2hub -owner alindeman \
+    -repo lint2hub \
+    -pull-request 1234 \
+    -sha "adc83b19e793491b1c6ea0fd8b46cd9f32e592fc" \
+    -pattern '^(?P<file>[^:]+):(?P<line>[\d]+):(?P<column>\d*): (?P<body>.*)$'
 ```
-
-### Batch Mode
-
-**lint2hub** makes several API requests to the GitHub API. To minimize the number of duplicate requests sent for a single pull request, **lint2hub** offers a *batch mode* where multiple comments are posted in a single invocation.
-
-In batch mode **lint2hub** reads the following format from standard input:
-
-```
-filename<tab>line number<tab>comment
-filename<tab>line number<tab>comment
-...
-```
-
-For example:
-
-```
-printf "foo.go\t8\texported method Foo.Bar should have comment or be unexported
-bar.go\t12\texported method Bar.Foo should have comment or be unexported" | \
-  lint2hub -owner "$OWNER" \
-    -repo "$REPO" \
-    -pull-request "$PULL_REQUEST" \
-    -sha "$SHA" \
-    -batch
-```
-
-To post a multi-line comment in batch mdoe, replace newline characters with `<br>`.
