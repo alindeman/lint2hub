@@ -27,5 +27,5 @@ gometalinter ./... |
     -repo lint2hub \
     -pull-request 1234 \
     -sha "adc83b19e793491b1c6ea0fd8b46cd9f32e592fc" \
-    -pattern '^(?P<file>[^:]+):(?P<line>[\d]+):(?P<column>\d*): (?P<body>.*)$'
+    -pattern '^(?P<file>[^:]+):(?P<line>\d+):(?P<column>\d*):(\S+:)* (?P<body>.*)$'
 ```

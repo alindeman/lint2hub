@@ -67,7 +67,7 @@ func run() error {
 	flag.StringVar(&repo, "repo", "", "Name of the GitHub repository")
 	flag.IntVar(&pullRequest, "pull-request", 0, "Pull request number")
 	flag.StringVar(&sha, "sha", "", "SHA of the commit of this checkout. If this SHA does not match the latest SHA of the pull request, no comments will be posted")
-	flag.StringVar(&pattern, "pattern", `^(?P<file>[^:]+):(?P<line>[\d]+):(?P<column>\d*): (?P<body>.*)$`, "Regular expression matching standard input. Must contain `file`, `line`, and `body` named capture groups")
+	flag.StringVar(&pattern, "pattern", `^(?P<file>[^:]+):(?P<line>\d+):(?P<column>\d*):(\S+:)* (?P<body>.*)$`, "Regular expression matching standard input. Must contain `file`, `line`, and `body` named capture groups")
 	flag.StringVar(&file, "file", "", "Filename")
 	flag.IntVar(&lineNum, "line", 0, "Line number")
 	flag.StringVar(&body, "body", "", "Body of the comment")
