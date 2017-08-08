@@ -8,7 +8,7 @@ import (
 
 var (
 	reDiffFileHeader = regexp.MustCompile(`^diff --git a/(.*) b/(.*)$`)
-	reDiffHunk       = regexp.MustCompile(`^@@ -?(\d+)(?:,(\d+))? \+?(\d+)(?:,(\d)+)? @@$`)
+	reDiffHunk       = regexp.MustCompile(`^@@ -?(\d+)(?:,(\d+))? \+?(\d+)(?:,(\d)+)? @@`)
 	reDiffAddition   = regexp.MustCompile(`^\+`)
 	reDiffContext    = regexp.MustCompile(`^ `)
 )
