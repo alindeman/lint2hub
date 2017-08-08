@@ -43,7 +43,7 @@ Bob
 			positions: map[string]map[int]int{
 				"README.md": {
 					1:   2,
-					2:   0, // not an addition line
+					2:   4,
 					3:   0, // not present
 					101: 12,
 					102: 13,

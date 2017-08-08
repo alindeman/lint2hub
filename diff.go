@@ -93,10 +93,8 @@ func buildPositionMap(fileDiff string) map[int]int {
 
 			lineNum, _ = strconv.Atoi(matches[3])
 		} else {
-			if reDiffAddition.MatchString(line) {
+			if reDiffAddition.MatchString(line) || reDiffContext.MatchString(line) {
 				positions[lineNum] = position
-				lineNum++
-			} else if reDiffContext.MatchString(line) {
 				lineNum++
 			}
 		}
